@@ -1,13 +1,12 @@
-import struct
-import logging
-import errno
-from hashlib import sha1
 from hashlib import md5
+from hashlib import sha1
 from base64 import b64encode
 from socket import error as SocketError
-from socketserver import ThreadingMixIn 
 from socketserver import TCPServer
 from socketserver import StreamRequestHandler
+import errno
+import logging
+import struct
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -48,28 +47,6 @@ OPCODE_BINARY       = 0x2
 OPCODE_CLOSE_CONN   = 0x8
 OPCODE_PING         = 0x9
 OPCODE_PONG         = 0xA
-
-
-# Function for encoding data to UTF-8
-def encode_utf8(data):
-    try:
-        return data.encode('UTF-8')
-    except UnicodeEncodeError as e:
-        logger.error("UTF8 Encoding Error -- %s" % e)
-        return False
-    except Exception as e:
-        raise(e)
-        return False
-
-# Function for decoding data from UTF-8
-def decode_utf8(data):
-    try:
-        return data.decode('utf-8')
-    except UnicodeDecodeError:
-        logger.error("UTF8 Decoding Error -- %s" % e)
-        return False
-    except Exception as e:
-        raise(e)
 
 # Class for websocket client
 class WebSocketClient():
@@ -128,6 +105,7 @@ class WebsocketServer(TCPServer, WebSocketClient):
     # Function for receiving !echo message
     def _msg_received_(self, handler, msg):
         received_msg = msg.decode('utf8')
+
         if '!echo' in received_msg:
             self.send_msg(received_msg[6:])
 
@@ -154,6 +132,7 @@ class WebsocketServer(TCPServer, WebSocketClient):
     def _client_disconnect_(self, handler):
         client = self.handler_to_client(handler)
         self.client_disconnect(client, self)
+
         if client in self.clients:
             self.clients.remove(client)
         
@@ -195,14 +174,12 @@ class WebSocketHandler(StreamRequestHandler):
 
     # Function to handle sending text message
     def send_text(self, msg, opcode=OPCODE_TEXT):
-        # Message Validation
         if isinstance(msg, bytes):
-            msg = decode_utf8(msg)
+            msg = msg.decode('UTF-8')
+        
             if not msg:
                 logger.warning("Message is not UTF8")
                 return False
-        # elif sys.version_info < (3,0) and (isinstance(msg, str) or isinstance(msg, unicode)):
-        #     pass
         elif isinstance(msg, str):
             pass
         else:
@@ -210,7 +187,7 @@ class WebSocketHandler(StreamRequestHandler):
             return False
 
         header  = bytearray()
-        payload = encode_utf8(msg)
+        payload = msg.encode('UTF-8')
         payload_length = len(payload)
 
         if payload_length <= 125:
@@ -236,23 +213,17 @@ class WebSocketHandler(StreamRequestHandler):
         payload = msg
         payload_length = len(payload)
 
-        # Normal payload
         if payload_length <= 125:
             header.append(FIN | opcode)
             header.append(payload_length)
-
-        # Extended payload
         elif payload_length >= 126 and payload_length <= 65535:
             header.append(FIN | opcode)
             header.append(PAYLOAD_LEN_EXT16)
             header.extend(struct.pack(">H", payload_length))
-
-        # Huge extended payload (2^64)
         elif payload_length < 18446744073709551616:
             header.append(FIN | opcode)
             header.append(PAYLOAD_LEN_EXT64)
             header.extend(struct.pack(">Q", payload_length))
-
         else:
             raise Exception("Message is too big. Can't process")
             return
@@ -298,6 +269,7 @@ class WebSocketHandler(StreamRequestHandler):
     # Function to handle handshake
     def handshake(self):
         headers = self.read_http_headers()
+
         try:
             assert headers['upgrade'].lower() == 'websocket'
         except AssertionError:
@@ -325,6 +297,7 @@ class WebSocketHandler(StreamRequestHandler):
                 logger.info("Client closed connection.")
                 self.keep_alive = False
                 return
+
             b1, b2 = 0, 0
         except ValueError as e:
             b1, b2 = 0, 0
@@ -370,8 +343,10 @@ class WebSocketHandler(StreamRequestHandler):
         for msg_byte in self.read_bytes(payload_length):
             msg_byte ^= masks[len(msg_bytes) % 4]
             msg_bytes.append(msg_byte)
+
         if opcode == OPCODE_TEXT:
             received_msg = msg_bytes.decode('utf8')
+
             if '!echo' in received_msg:
                 self.send_msg(received_msg[6:])
             elif '!submission' in received_msg:
@@ -380,8 +355,10 @@ class WebSocketHandler(StreamRequestHandler):
                 with open('data3.zip', 'rb') as file:
                     while True:
                         byte = file.read(1)
+
                         if byte == b"":
                             break
+
                         payload.extend(byte)
                         
                 self.send_binary(payload)
