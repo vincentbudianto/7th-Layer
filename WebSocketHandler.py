@@ -70,8 +70,6 @@ class WebSocketHandler(StreamRequestHandler):
             Sec-WebSocket-Version: 13
         '''
         headers = {}
-        http_get = self.rfile.readline().decode().strip()
-
 
         while (True):
             header = self.rfile.readline().decode().strip()
@@ -125,18 +123,19 @@ class WebSocketHandler(StreamRequestHandler):
         masks = self.read_bytes(4)
 
         message_bytes = bytearray()
+
         for message_byte in self.read_bytes(payload_length):
             message_byte = message_byte ^ masks[len(message_bytes) % 4]
             message_bytes.append(message_byte)
 
         if opcode == OPCODE_TEXT:
             received_message = message_bytes.decode('utf8')
+
             if '!echo' in received_message:
                 self.send(received_message[6:])
             elif '!submission' in received_message:
                 payload = bytearray(open('to_send.zip', 'rb').read())
                 self.send(payload)
-
         elif opcode == OPCODE_BINARY:
             hash1 = md5(message_bytes).hexdigest()
             hash2 = md5(open('to_send.zip','rb').read()).hexdigest()
@@ -144,7 +143,6 @@ class WebSocketHandler(StreamRequestHandler):
                 self.send("1")
                 return
             self.send("0")
-
         elif opcode == OPCODE_PING:
             payload = message_bytes
             header = self.create_header_by_payload_length_and_opcode(payload.length(), OPCODE_PONG)
