@@ -25,28 +25,15 @@ from WebSocketHandler import WebSocketHandler
 '''
 
 class WebSocketServer(TCPServer):
-    allow_reuse_address = True
     clients = []
     counter = 0
-    daemon_threads = True
 
     # Websocket server initiator
     def __init__(self, port, host):
-        TCPServer.__init__(self, (host, port), WebSocketHandler)
+        server_adrress = (host, port)
+        TCPServer.__init__(self, server_adrress, WebSocketHandler)
         self.address = self.socket.getsockname()[0]
         self.port = self.socket.getsockname()[1]
-
-    # Function for receiving ping message
-    def _ping_received_(self, handler, msg):
-        handler.send(msg)
-
-    # Function for receiving pong message
-    def _pong_received_(self, handler, msg):
-        pass
-
-    # Function for receiving binary message
-    def _binary_received_(self, handler, msg):
-        pass
 
     # Function for creating new websocket client
     def _client_(self, handler):
