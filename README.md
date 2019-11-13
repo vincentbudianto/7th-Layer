@@ -1,9 +1,9 @@
 # Simple-Websocket-Server
 
 Implementasi websocket server sederhana yang terbuat dari layer 4 dengan menggunakan TCP
-socket dan tidak menggunakan HTTP server. 
+socket dan tidak menggunakan HTTP server.
 
-Referensi protokol websocket: https://tools.ietf.org/html/rfc6455 
+Referensi protokol websocket: https://tools.ietf.org/html/rfc6455
 
 Fungsionalitas:
 1. Handshake (opening & closing)
@@ -38,8 +38,8 @@ ws://0a3e2e87.ngrok.io/
 7. Tunggu hasil dari submission
 
 ## Pembagian Tugas
-| NIM      | Nama            | Apa yang dikerjakan     | Persentase kontribusi |
-| -------- | --------------- | ----------------------- | --------------------- |
-| 13517014 | Yoel Susanto    | Websocket, server       | 50%                   |
-| 13517059 | Nixon Andhika   | Doc, beautify code      | 20%                   |
-| 13517137 | Vincent Budianto| Client, handshake       | 30%                   |
+| NIM      | Nama            | Apa yang dikerjakan          | Persentase kontribusi |
+| -------- | --------------- | ---------------------------- | --------------------- |
+| 13517014 | Yoel Susanto    | Websocket, server            | 50%                   |
+| 13517059 | Nixon Andhika   | Doc, beautify code           | 25%                   |
+| 13517137 | Vincent Budianto| Client test, handshake       | 25%                   |
