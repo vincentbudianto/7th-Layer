@@ -118,7 +118,6 @@ class WebSocketHandler(StreamRequestHandler):
         payload_length = b2 & PAYLOAD_LEN
 
         if opcode == OPCODE_CLOSE_CONN:
-            print("Client asked to close connection")
             self.running = False
             return
 

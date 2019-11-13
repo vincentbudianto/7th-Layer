@@ -40,12 +40,12 @@ class WebSocketServer(TCPServer):
         self.counter += 1
         client = {'id': self.counter,'handler': handler,'address': handler.client_address}
         self.clients.append(client)
-        self.set_new_client_callback(client)
+        self.new_client_callback(client)
 
     # Function for removing disconnected websocket client
     def _client_disconnect_(self, handler):
         client = self.handler_to_client(handler)
-        self.client_disconnect(client)
+        self.client_disconnect_callback(client)
 
         if client in self.clients:
             self.clients.remove(client)
@@ -61,16 +61,15 @@ class WebSocketServer(TCPServer):
         print("Server is running!")
         print("Host: {}".format(self.address))
         print("Port: {}".format(self.port))
-        self.serve_forever()
+        try:
+            self.serve_forever()
+        except KeyboardInterrupt:
+            self.server_close()
 
     # function for connecting client
     def set_new_client_callback(self, new_client_callback):
-        self.set_new_client_callback = new_client_callback
+        self.new_client_callback = new_client_callback
 
     # function for disconnecting client
     def set_client_disconnect_callback(self, callback):
-        self.client_disconnect = callback
-
-    # function for returning response to one client
-    def send_msg(self, client, message):
-        client['handler'].send(message)
+        self.client_disconnect_callback = callback
