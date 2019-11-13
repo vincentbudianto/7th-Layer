@@ -1,17 +1,17 @@
 from WebSocketServer import WebSocketServer
 
-def client(client, server):
-	print("New client. Id: %d" % client['id'])
+def new_client_callback(client):
+	print("New client just connected! ID:{}".format(client['id']))
 
-def client_disconnect(client, server):
-	print("Client %d disconnected" % client['id'])
+def client_disconnect_callback(client):
+	print("Client disconnected! ID:{}".format(client['id']))
 
 def main():
 	PORT=9001
 	HOST='0.0.0.0'
 	server = WebSocketServer(PORT, HOST)
-	server.set_client(client)
-	server.set_client_disconnect(client_disconnect)
+	server.set_new_client_callback(new_client_callback)
+	server.set_client_disconnect_callback(client_disconnect_callback)
 	server.run()
 
 if __name__ == "__main__":

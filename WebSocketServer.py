@@ -33,6 +33,7 @@ class WebSocketServer(TCPServer):
     # Websocket server initiator
     def __init__(self, port, host):
         TCPServer.__init__(self, (host, port), WebSocketHandler)
+        self.address = self.socket.getsockname()[0]
         self.port = self.socket.getsockname()[1]
 
     # Function for receiving ping message
@@ -52,19 +53,15 @@ class WebSocketServer(TCPServer):
         self.counter += 1
         client = {'id': self.counter,'handler': handler,'address': handler.client_address}
         self.clients.append(client)
-        self.client(client, self)
+        self.set_new_client_callback(client)
 
     # Function for removing disconnected websocket client
     def _client_disconnect_(self, handler):
         client = self.handler_to_client(handler)
-        self.client_disconnect(client, self)
+        self.client_disconnect(client)
 
         if client in self.clients:
             self.clients.remove(client)
-
-    # Function to send response to one client
-    def _unicast_(self, to_client, msg):
-        to_client['handler'].send_msg(msg)
 
     # Function to get client with handler
     def handler_to_client(self, handler):
@@ -74,24 +71,19 @@ class WebSocketServer(TCPServer):
 
     # function to make the client run indefinitely
     def run(self):
-        try:
-            print("Server port: %d" % self.port)
-            self.serve_forever()
-        except KeyboardInterrupt:
-            self.server_close()
-            print("Server terminated")
-        except Exception as e:
-            print(str(e), exc_info=True)
-            exit(1)
+        print("Server is running!")
+        print("Host: {}".format(self.address))
+        print("Port: {}".format(self.port))
+        self.serve_forever()
 
     # function for connecting client
-    def set_client(self, client):
-        self.client = client
+    def set_new_client_callback(self, new_client_callback):
+        self.set_new_client_callback = new_client_callback
 
     # function for disconnecting client
-    def set_client_disconnect(self, client):
-        self.client_disconnect = client
+    def set_client_disconnect_callback(self, callback):
+        self.client_disconnect = callback
 
     # function for returning response to one client
     def send_msg(self, client, message):
-        self._unicast_(client, message)
+        client['handler'].send(message)
