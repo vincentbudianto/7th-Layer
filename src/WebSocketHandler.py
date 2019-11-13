@@ -69,7 +69,10 @@ class WebSocketHandler(StreamRequestHandler):
             Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
             Sec-WebSocket-Version: 13
         '''
+        # remove http get
+        self.rfile.readline()
         headers = {}
+
 
         while (True):
             header = self.rfile.readline().decode().strip()
