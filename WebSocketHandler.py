@@ -1,9 +1,7 @@
 from hashlib import md5
 from hashlib import sha1
 from base64 import b64encode
-from socket import error as SocketError
 from socketserver import StreamRequestHandler
-import errno
 import struct
 
 #BASE FRAMING
@@ -45,8 +43,8 @@ class WebSocketHandler(StreamRequestHandler):
 
     # Function to read bytes
     def read_bytes(self, num):
-        bytes = self.rfile.read(num)
-        return bytes
+        data_byte = self.rfile.read(num)
+        return data_byte
 
     # Function to handle sending binary message
     def send(self, received_payload, opcode=OPCODE_BINARY):
@@ -56,8 +54,7 @@ class WebSocketHandler(StreamRequestHandler):
             opcode = OPCODE_TEXT
             payload = payload.encode('UTF-8')
 
-        payload_length = len(payload)
-        header = self.create_header_by_payload_length_and_opcode(payload_length, opcode)
+        header = self.create_header_by_payload_length_and_opcode(len(payload), opcode)
         self.request.send(header + payload)
 
     # Function to get header
@@ -102,40 +99,34 @@ class WebSocketHandler(StreamRequestHandler):
         response = self.create_handshake_response(headers['sec-websocket-key'])
         self.handshaked = self.request.send(response.encode())
         self.valid = True
-        self.server._client_(self)
+        self.server.new_client(self)
 
     # Function to handle received message
     def read_next_message(self):
         try:
-            b1, b2 = self.read_bytes(2)
+            first_byte, second_byte = self.read_bytes(2)
         except Exception:
-            print("Client closed connection")
+            print("Could not get first two bytes from incoming request!")
             self.running = False
             return
 
-        fin = b1 & FIN
-        opcode = b1 & OPCODE
-        payload_length = b2 & PAYLOAD_LEN
+        fin = first_byte & FIN
+        opcode = first_byte & OPCODE
+        payload_length = self.get_payload_length(second_byte)
 
         if opcode == OPCODE_CLOSE_CONN:
             self.running = False
             return
-
-        if opcode == OPCODE_CONTINUATION:
-            print("Continuation frames are not supported")
+        elif opcode == OPCODE_CONTINUATION:
+            print("Continuation not implemented!")
             self.running = False
             return
 
-        if payload_length == 126:
-            payload_length = struct.unpack(">H", self.rfile.read(2))[0]
-        elif payload_length == 127:
-            payload_length = struct.unpack(">Q", self.rfile.read(8))[0]
-
         masks = self.read_bytes(4)
-        message_bytes = bytearray()
 
+        message_bytes = bytearray()
         for message_byte in self.read_bytes(payload_length):
-            message_byte ^= masks[len(message_bytes) % 4]
+            message_byte = message_byte ^ masks[len(message_bytes) % 4]
             message_bytes.append(message_byte)
 
         if opcode == OPCODE_TEXT:
@@ -143,16 +134,12 @@ class WebSocketHandler(StreamRequestHandler):
             if '!echo' in received_message:
                 self.send(received_message[6:])
             elif '!submission' in received_message:
-                payload = bytearray(open('data3.zip', 'rb').read())
+                payload = bytearray(open('to_send.zip', 'rb').read())
                 self.send(payload)
 
         elif opcode == OPCODE_BINARY:
-            received_message = message_bytes
-            with open('data2.zip', 'wb') as file:
-                file.write(received_message)
-            file.close()
-            hash1 = md5(open('data2.zip','rb').read()).hexdigest()
-            hash2 = md5(open('data3.zip','rb').read()).hexdigest()
+            hash1 = md5(message_bytes).hexdigest()
+            hash2 = md5(open('to_send.zip','rb').read()).hexdigest()
             if hash1.lower() == hash2.lower():
                 self.send("1")
                 return
@@ -180,7 +167,17 @@ class WebSocketHandler(StreamRequestHandler):
 
     # Function to handle disconnected client
     def finish(self):
-        self.server._client_disconnect_(self)
+        self.server.client_disconnect(self)
+
+    def get_payload_length(self, second_byte):
+        payload_length = second_byte & PAYLOAD_LEN
+
+        if payload_length == 126:
+            payload_length = struct.unpack(">H", self.read_bytes(2))[0]
+        elif payload_length == 127:
+            payload_length = struct.unpack(">Q", self.read_bytes(8))[0]
+
+        return payload_length
 
 	# Function for creating header
     def create_header_by_payload_length_and_opcode(self, payload_length, opcode):

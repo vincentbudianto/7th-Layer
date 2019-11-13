@@ -36,25 +36,26 @@ class WebSocketServer(TCPServer):
         self.port = self.socket.getsockname()[1]
 
     # Function for creating new websocket client
-    def _client_(self, handler):
+    def new_client(self, handler):
         self.counter += 1
-        client = {'id': self.counter,'handler': handler,'address': handler.client_address}
+        client = {'handler': handler, 'id': self.counter}
         self.clients.append(client)
         self.new_client_callback(client)
 
     # Function for removing disconnected websocket client
-    def _client_disconnect_(self, handler):
-        client = self.handler_to_client(handler)
+    def client_disconnect(self, handler):
+        client = self.get_client_by_handler(handler)
         self.client_disconnect_callback(client)
 
         if client in self.clients:
             self.clients.remove(client)
 
     # Function to get client with handler
-    def handler_to_client(self, handler):
+    def get_client_by_handler(self, handler):
         for client in self.clients:
-            if client['handler'] == handler:
-                return client
+            if client['handler'] != handler:
+                continue
+            return client
 
     # function to make the client run indefinitely
     def run(self):
