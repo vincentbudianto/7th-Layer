@@ -1,4 +1,4 @@
-from socketserver import TCPServer
+from socketserver import TCPServer, ThreadingMixIn
 from WebSocketHandler import WebSocketHandler
 
 '''
@@ -24,9 +24,10 @@ from WebSocketHandler import WebSocketHandler
     +---------------------------------------------------------------+
 '''
 
-class WebSocketServer(TCPServer):
+class WebSocketServer(ThreadingMixIn, TCPServer):
     clients = []
     counter = 0
+    daemon_threads = True
 
     # Websocket server initiator
     def __init__(self, port, host):
